@@ -1,0 +1,143 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "storageAccountName": {
+        "type": "string",
+        "maxLength": 20
+      }
+
+    },
+    "variables": {
+        "storageType" : "Standard_LRS",
+        "finalStorageacountName" : "[concat(parameters('storageAccountName'), uniqueString(resourceGroup().name))]"
+    },
+    "resources": [
+        {
+            "name": "[variables('finalStorageacountName') ]",
+            "location": "[resourceGroup().location]",
+            "type": "Microsoft.storage/storageAccounts",
+            "apiVersion": "2018-07-01",
+            "sku": {
+                "name" : "[variables('storageType')]"
+            },
+            "kind":"StorageV2"
+        },
+        {
+            "name": "virtualnetwork01",
+            "apiVersion": "2018-12-01",
+            "location": "[resourceGroup().location]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "properties":{
+                "addressSpace":{
+                    "addressPrefixes":[
+                        "10.0.0.0/16"
+                    ]
+                },
+                "subnets":[
+                    {
+                        "name": "subnet01",
+                        "properties":{
+                            "addressPrefix": "10.0.1.0/24"
+                        }
+                    }
+                ]
+            }
+            
+        },
+        {
+            "name": "pip01",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "location" : "[resourceGroup().location]",
+            "apiVersion": "2018-11-01",
+            "sku": {
+                "name": "Basic"
+              },
+              "properties":{
+                  "publicIPAllocationMethod":"Dynamic",
+                
+              }
+
+        },
+        {
+            "name" : "nic01",
+            "apiVersion":"2018-11-01",
+            "location": "[resourceGroup().location]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "dependsOn": [
+                "virtualnetwork01"
+            ],
+            "properties":{
+                "ipConfigurations":[
+                    {
+                        "name": "ipconfig01",
+                        "properties":{
+                            "privateIPAllocationMethod" :"Dynamic",
+                            "subnet":{
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'virtualnetwork01','subnet01')]"
+                            },
+                            "publicIPAddress" :{
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses/', 'pip01')]"
+                            }
+                        }
+                    }
+                ]
+           
+           }
+            
+        },
+        {
+            "name": "vm01",
+            "apiVersion": "2018-10-01",
+            "location": "[resourceGroup().location]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "dependsOn": [                
+                "nic01",
+                "[variables('finalStorageacountName')]"],
+
+            
+            "properties":{
+                "hardwareProfile" :{
+                    "vmSize" : "Standard_DS4"
+                    
+                },
+                "osProfile":{
+                    "computerName": "vm01",
+                    "adminPassword": "citynext!1234",
+                    "adminUsername": "citynextadmin"
+                },
+                "networkProfile":{
+                    "networkInterfaces":[
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces','nic01')]",
+                            "properties":{
+                                "primary":true
+                            }
+                        }
+                    ]
+                },
+                "storageProfile":{
+                    "imageReference":{
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2016-Datacenter",
+                        "version": "latest"
+                    },
+                    "osDisk":{
+                        "createOption":"FromImage",
+                        "osType":"Windows",
+                        "name": "abcxyz.vhd",
+                        "vhd":{
+                            "uri": "[concat(reference(variables('finalStorageacountName')).primaryEndpoints.blob, 'vhds/','abcxyz.vhd')]"
+                        }
+                    }
+                }
+            }
+        }
+
+    ],
+    "outputs": {
+        
+    }
+  }
+  
