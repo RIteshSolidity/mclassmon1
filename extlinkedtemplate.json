@@ -1,0 +1,48 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "storageAccountName": {
+        "type": "string",
+        "maxLength": 20
+      },
+      "locationName":{
+          "type": "string",
+          "allowedValues": ["West Europe", "West US"]
+      }
+    },
+    "variables": {
+        "storageType" : "Standard_LRS"
+    },
+    "resources": [
+        {
+            "name": "deployment1",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "properties":{
+                "mode": "Incremental",
+                "templateLink":{
+                    "contentVersion": "1.0.0.0",
+                    "uri": "[concat('https://qwesasagoluenjcx33ik.blob.core.windows.net/armtemplates/simplestorage.json','?sv=2018-03-28&ss=bfqt&srt=sco&sp=rwdlacup&se=2019-06-28T16:56:54Z&st=2019-06-18T08:56:54Z&spr=https&sig=V62I0vXrNSXGJkqMNaliqMqNI2WplBjUTizDkihqOAw%3D')]"
+                },
+                "parameters":{
+                    "storageAccountName":{
+                        "value": "[parameters('storageAccountName')]"
+                    },
+                    "locationName":{
+                        "value": "[parameters('locationName')]"
+                    }
+                }
+            }
+
+        }
+        
+    ],
+    "outputs": {
+        "myoutput" : {
+            "type": "object",
+            "value": "[reference('deployment1').outputs.mystorage.value]"
+        }
+    }
+  }
+  
